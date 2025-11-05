@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<title>20 Bytes Bit Demo</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  table { border-collapse: collapse; }
+  td { padding: 4px 8px; text-align: center; }
+  .ascii { width: 40px; }
+
+  /* ✅ 自訂 checkbox：選取時整個方塊變黑 */
+  input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      appearance: none;
+      border: 1px solid #444;
+      cursor: pointer;
+  }
+
+  input[type="checkbox"]:checked {
+      background-color: black;
+  }
+</style></head>
+<body>
+
+<h2>硬碟 20 Bytes Bit 存取示範</h2>
+<p>每一列(row) = 1 Byte = 8 bits，勾選後會即時顯示十進位與 ASCII 字元。</p>
+
+<table border="1">
+  <tr>
+    <th>Byte #</th>
+    <th colspan="8">Bits</th>
+    <th>十進位</th>
+    <th>ASCII</th>
+  </tr>
+
+  <!-- 產生 20 rows -->
+  <tbody id="byteTable"></tbody>
+
+</table>
+
+<script>
+// 產生 20 rows
+const tbody = document.getElementById("byteTable");
+
+for (let row = 0; row < 20; row++) {
+    const tr = document.createElement("tr");
+
+    // Byte 標號
+    let tdIndex = document.createElement("td");
+    tdIndex.textContent = row;
+    tr.appendChild(tdIndex);
+
+    // 8 個 bit checkbox
+    for (let bit = 0; bit < 8; bit++) {
+        const td = document.createElement("td");
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.dataset.row = row;
+        cb.dataset.bit = bit;
+        cb.addEventListener("change", updateRow);
+        td.appendChild(cb);
+        tr.appendChild(td);
+    }
+
+    // Decimal 顯示欄
+    let tdDec = document.createElement("td");
+    tdDec.id = `dec-${row}`;
+    tdDec.textContent = "0";
+    tr.appendChild(tdDec);
+
+    // ASCII 顯示欄
+    let tdAsc = document.createElement("td");
+    tdAsc.id = `asc-${row}`;
+    tdAsc.textContent = "";
+    tr.appendChild(tdAsc);
+
+    tbody.appendChild(tr);
+}
+
+// 更新某一 row 的 byte 內容
+function updateRow(e) {
+    const row = e.target.dataset.row;
+
+    // 取得該列所有 checkbox
+    const bits = [...document.querySelectorAll(`input[data-row="${row}"]`)];
+    
+    // 計算 Byte 值
+    let value = 0;
+    bits.forEach(cb => {
+        if (cb.checked) {
+            value += 1 << (7 - cb.dataset.bit);  // MSB→LSB
+        }
+    });
+
+    // 更新 decimal
+    document.getElementById(`dec-${row}`).textContent = value;
+
+    // 更新 ASCII（可顯示可列印字元）
+    let ascii = (value >= 32 && value <= 126) ? String.fromCharCode(value) : "";
+    document.getElementById(`asc-${row}`).textContent = ascii;
+}
+</script>
+
+</body>
+</html>
