@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>簡老師的排序法訓練 - 選擇排序掃描版</title>
+    <style>
+        body { 
+            font-family: 'PingFang TC', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; 
+            background-color: #f0f2f5; margin: 0; min-height: 100vh;
+        }
+
+        /* 浮水印 */
+        body::before {
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: -1;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><text x="50%" y="50%" font-size="24" fill="rgba(0,0,0,0.04)" font-family="Arial" text-anchor="middle" transform="rotate(-30, 200, 150)">簡老師的排序法訓練</text></svg>');
+            background-repeat: repeat;
+        }
+
+        .container { margin-top: 30px; display: flex; flex-direction: column; gap: 20px; align-items: center; }
+        .row { display: flex; gap: 12px; min-height: 150px; padding: 20px; background: rgba(0,0,0,0.05); border-radius: 10px; }
+        
+        .card {
+            width: 70px; height: 100px; background: white; border: 2px solid #333;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; font-weight: bold; position: relative; transition: all 0.2s;
+            user-select: none;
+        }
+
+        /* 掃描中的樣式（藍色發光） */
+        .card.scanning { border-color: #0984e3; box-shadow: 0 0 15px #0984e3; transform: translateY(-5px); z-index: 2; }
+        /* 目前找到最小的樣式（粉紅色） */
+        .card.min-found { border-color: #e84393; background: #fd79a8; color: white; }
+        /* 目標位置（紅虛框樣式） */
+        .target-slot { border: 3px dashed #ff7675 !important; background: #fff5f5; }
+
+        .status { font-size: 1.2rem; font-weight: bold; height: 40px; margin-top: 10px; }
+        .info { color: #0984e3; }
+        .success { color: #27ae60; }
+        .warning { color: #e67e22; }
+
+        .controls { display: flex; gap: 10px; }
+        button { padding: 10px 20px; cursor: pointer; border-radius: 5px; border: none; background: #636e72; color: white; font-size: 16px; }
+        #swap-btn { background: #27ae60; display: none; }
+    </style>
+</head>
+<body>
+
+    <h2>🃏 選擇排序：不重複牌組掃描演示</h2>
+    <p style="color: #666;">模擬電腦邏輯：必須「由左至右」依序掃描，確認最小值後才能交換。</p>
+
+    <div class="container">
+        <div id="upper-row" class="row"></div>
+        <div class="controls">
+            <button id="reload-btn">重新洗牌</button>
+            <button id="swap-btn">執行交換 (Swap)</button>
+        </div>
+        <div id="message" class="status"></div>
+    </div>
+
+
+
+<script>
+    const upperRow = document.getElementById('upper-row');
+    const message = document.getElementById('message');
+    const reloadBtn = document.getElementById('reload-btn');
+    const swapBtn = document.getElementById('swap-btn');
+
+    let cards = [];
+    let sortedIndex = 0;   // 目前要填入的位置 (i)
+    let scanIndex = 0;     // 目前掃描到的位置 (j)
+    let minIdxInScan = 0;  // 目前發現的最小值 index
+
+    function init() {
+        sortedIndex = 0;
+        // 生成 1-13 不重複的 10 張牌
+        cards = Array.from({length: 13}, (_, i) => i + 1)
+                     .sort(() => Math.random() - 0.5)
+                     .slice(0, 10);
+        startNewRound();
+    }
+
+    function startNewRound() {
+        if (sortedIndex >= cards.length - 1) {
+            showMessage("🎉 全數排序完成！", "success");
+            swapBtn.style.display = 'none';
+            render();
+            return;
+        }
+        scanIndex = sortedIndex; // 從 i 開始掃描
+        minIdxInScan = sortedIndex; // 暫定第一個為最小
+        swapBtn.style.display = 'none';
+        showMessage(`請點擊紅框右側的牌進行「掃描比較」`, "info");
+        render();
+    }
+
+    function render() {
+        upperRow.innerHTML = '';
+        cards.forEach((val, i) => {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'card';
+            cardDiv.textContent = val;
+
+            // 已排序區域
+            if (i < sortedIndex) {
+                cardDiv.style.opacity = "0.3";
+                cardDiv.style.backgroundColor = "#eee";
+            } 
+            // 目前目標位置 (i)
+            else if (i === sortedIndex) {
+                cardDiv.classList.add('target-slot');
+            }
+
+            // 目前掃描位置 (j)
+            if (i === scanIndex && i >= sortedIndex) {
+                cardDiv.classList.add('scanning');
+            }
+            // 紀錄中的最小值
+            if (i === minIdxInScan && i >= sortedIndex) {
+                cardDiv.classList.add('min-found');
+            }
+
+            cardDiv.onclick = () => handleScan(i);
+            upperRow.appendChild(cardDiv);
+        });
+    }
+
+    function handleScan(idx) {
+        // 限制 1：只能掃描未排序區域
+        if (idx < sortedIndex) return;
+
+        // 限制 2：必須按照順序掃描 (j = j + 1)
+        if (idx !== scanIndex + 1) {
+            if (idx > scanIndex) {
+                showMessage(`電腦必須一張一張比對！請點擊第 ${scanIndex + 2} 張牌。`, "warning");
+            }
+            return;
+        }
+
+        scanIndex = idx;
+        
+        // 比較邏輯
+        if (cards[scanIndex] < cards[minIdxInScan]) {
+            minIdxInScan = scanIndex;
+            showMessage(`喔！發現更小的 ${cards[minIdxInScan]}，紀錄起來！`, "success");
+        } else {
+            showMessage(`這張沒有比較小，繼續掃描...`, "info");
+        }
+
+        // 掃描完畢檢查
+        if (scanIndex === cards.length - 1) {
+            showMessage(`掃描完畢！現在可以將 ${cards[minIdxInScan]} 交換到紅框位置。`, "success");
+            swapBtn.style.display = 'inline-block';
+        }
+        render();
+    }
+
+    swapBtn.onclick = () => {
+        // 執行 Swap
+        let temp = cards[sortedIndex];
+        cards[sortedIndex] = cards[minIdxInScan];
+        cards[minIdxInScan] = temp;
+        
+        sortedIndex++;
+        startNewRound();
+    };
+
+    reloadBtn.onclick = init;
+    init();
+
+    function showMessage(msg, type) {
+        message.textContent = msg;
+        message.className = 'status ' + type;
+    }
+</script>
+
+</body>
+</html>

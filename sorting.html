@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>簡老師的演算法教室</title>
+    <style>
+        body { font-family: 'PingFang TC', sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .menu { display: flex; gap: 20px; }
+        .menu-item { 
+            width: 200px; height: 150px; background: white; border-radius: 15px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-decoration: none; color: #2d3436; font-weight: bold; font-size: 1.2rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: 0.3s;
+            border: 2px solid transparent;
+        }
+        .menu-item:hover { transform: translateY(-10px); border-color: #0984e3; color: #0984e3; }
+        .icon { font-size: 3rem; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1 style="margin-bottom: 50px; color: #2d3436;">🃏 簡老師的演算法教室</h1>
+    <div class="menu">
+        <a href="insertion_sort.html" class="menu-item">
+            <div class="icon">🃏</div>
+            插入排序法
+        </a>
+        <a href="selection_sort.html" class="menu-item">
+            <div class="icon">🔍</div>
+            選擇排序法
+        </a>
+        <a href="bubble_sort.html" class="menu-item">
+            <div class="icon">🫧</div>
+            氣泡排序法
+        </a>
+    </div>
+    <p style="margin-top: 50px; color: #636e72;"></p>
+</body>
+</html>

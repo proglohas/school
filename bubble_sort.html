@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>簡老師的泡泡實驗室 - 40年的邏輯記憶</title>
+    <style>
+        body { 
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; 
+            background-color: #f4f7f6; margin: 0; min-height: 100vh;
+        }
+
+        /* 浮水印：簡老師的排序法訓練 */
+        body::before {
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: -1;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><text x="50%" y="50%" font-size="20" fill="rgba(0,0,0,0.03)" font-family="Arial" text-anchor="middle" transform="rotate(-30, 200, 150)">簡老師的排序法訓練</text></svg>');
+            background-repeat: repeat;
+        }
+
+        .container { margin-top: 50px; display: flex; flex-direction: column; gap: 30px; align-items: center; }
+        
+        /* 排序區域 */
+        .row { 
+            display: flex; gap: 15px; min-height: 160px; padding: 30px; 
+            background: white; border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        
+        .card {
+            width: 70px; height: 100px; background: #fff; border: 2px solid #2d3436;
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            font-size: 28px; font-weight: bold; position: relative; transition: all 0.4s ease;
+            box-shadow: 4px 4px 0px #2d3436;
+        }
+
+        /* 正在比較的狀態 */
+        .card.comparing { border-color: #0984e3; transform: translateY(-15px); background: #e3f2fd; }
+        
+        /* 抵達終點的氣泡 */
+        .card.sorted { 
+            border-color: #6c5ce7; background: #efecff; color: #6c5ce7; 
+            box-shadow: 4px 4px 0px #6c5ce7; opacity: 0.8;
+            animation: arrive 0.5s ease;
+        }
+
+        @keyframes arrive {
+            0% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* 藍色指引框 */
+        .bubble-focus {
+            position: absolute; width: 164px; height: 120px;
+            border: 4px solid #0984e3; border-radius: 15px;
+            top: 20px; pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(9, 132, 227, 0.05);
+        }
+
+        .status { font-size: 1.3rem; font-weight: bold; height: 40px; color: #2d3436; }
+        
+        .btn-group { display: flex; gap: 15px; }
+        button { 
+            padding: 12px 25px; cursor: pointer; border-radius: 50px; border: none; 
+            font-size: 16px; font-weight: bold; transition: 0.2s;
+        }
+        #swap-btn { background: #ff7675; color: white; box-shadow: 0 4px #d63031; }
+        #no-swap-btn { background: #55efc4; color: #2d3436; box-shadow: 0 4px #00b894; }
+        #reload-btn { background: #dfe6e9; color: #2d3436; }
+        button:active { transform: translateY(3px); box-shadow: none; }
+    </style>
+</head>
+<body>
+
+    <h2 style="letter-spacing: 2px;">簡老師的泡泡實驗室</h2>
+   
+
+    <div class="container">
+        <div id="upper-row" class="row">
+            <div id="focus-box" class="bubble-focus"></div>
+        </div>
+        
+        <div class="btn-group">
+            <button id="reload-btn">重新洗牌</button>
+            <button id="swap-btn">左大於右 (交換)</button>
+            <button id="no-swap-btn">左小於右 (往下走)</button>
+        </div>
+        
+        <div id="message" class="status"></div>
+    </div>
+
+<script>
+    const row = document.getElementById('upper-row');
+    const focusBox = document.getElementById('focus-box');
+    const message = document.getElementById('message');
+    const reloadBtn = document.getElementById('reload-btn');
+    const swapBtn = document.getElementById('swap-btn');
+    const noSwapBtn = document.getElementById('no-swap-btn');
+
+    let cards = [];
+    let n = 10;
+    let i = 0, j = 0;
+
+    function init() {
+        i = 0; j = 0;
+        cards = Array.from({length: 13}, (_, idx) => idx + 1)
+                     .sort(() => Math.random() - 0.5)
+                     .slice(0, n);
+        message.textContent = "第一輪掃描開始，準備讓最大的數字浮上去...";
+        render();
+    }
+
+    function render() {
+        // 更新牌面
+        const oldCards = row.querySelectorAll('.card');
+        oldCards.forEach(c => c.remove());
+
+        cards.forEach((val, index) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.textContent = val;
+            if (index >= n - i) card.classList.add('sorted');
+            if (index === j || index === j + 1) {
+                if (i < n - 1) card.classList.add('comparing');
+            }
+            row.appendChild(card);
+        });
+
+        // 移動藍框
+        if (i < n - 1) {
+            focusBox.style.display = 'block';
+            focusBox.style.left = (30 + j * 85) + "px";
+        } else {
+            focusBox.style.display = 'none';
+        }
+    }
+
+    function process(doSwap) {
+        if (i >= n - 1) return;
+        const vL = cards[j], vR = cards[j+1];
+
+        if (doSwap) {
+            if (vL > vR) {
+                [cards[j], cards[j+1]] = [cards[j+1], cards[j]];
+                message.textContent = `泡泡交換中... ${vL} 正在往右移動。`;
+            } else {
+                message.textContent = `不對喔，${vL} 並沒有比 ${vR} 大。`;
+                return;
+            }
+        } else {
+            if (vL <= vR) {
+                message.textContent = "保持原位，繼續檢查下一個。";
+            } else {
+                message.textContent = `${vL} 比 ${vR} 大，應該要交換喔！`;
+                return;
+            }
+        }
+
+        j++;
+        if (j >= n - 1 - i) {
+            i++; j = 0;
+            message.textContent = i < n-1 ? `第 ${i} 個最大的氣泡已就位。` : "🎉 所有氣泡都成功上浮了！";
+        }
+        render();
+    }
+
+    swapBtn.onclick = () => process(true);
+    noSwapBtn.onclick = () => process(false);
+    reloadBtn.onclick = init;
+    init();
+</script>
+
+</body>
+</html>
